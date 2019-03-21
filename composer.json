@@ -1,0 +1,25 @@
+{
+    "name": "cloud/cloudcsrf",
+    "type": "library",
+    "description": "csrf token generator",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Cloud",
+            "email": "mark801117@gmail.com",
+            "homepage": "https://github.com/mark801117"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Cloud\\CloudCsrf\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cloud\\CloudCsrf\\Test\\": "tests"
+        }
+    },
+    "require": {
+    }
+}
