@@ -10,11 +10,14 @@ class CloudCsrf
 
     const CSRF_TOKEN='csrf_token'; 
     const CSRF_TOKEN_NAME='_token';
-    const CSRF_TOKEN_VALUE=self::CSRF_TOKEN_VALUE;
+    const CSRF_TOKEN_VALUE='_token_value';
     
     public function __construct()
     {
         //1. 檢查session_status
+        if (!isset($_SESSION[self::CSRF_TOKEN])) {
+            $_SESSION[self::CSRF_TOKEN] = [];
+        }
         if (session_status() != PHP_SESSION_ACTIVE) {
             throw new CloudCsrfException('Session is not active');
         }
@@ -28,6 +31,9 @@ class CloudCsrf
     public function generateToken($name_length = 8, $value_length = 32, $expire_secs = 1800)
     {
         //0. 設定token有效時間
+        if (!isset($_SESSION[self::CSRF_TOKEN]['_token_expire_at'])) {
+            $this->updateExpireAt($expire_secs);
+        }
         $this->updateExpireAt($expire_secs);
         //1. 產生token_name
         //1.1 若已存在則不重複建立
