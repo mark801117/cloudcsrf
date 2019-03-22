@@ -79,10 +79,10 @@ class CloudCsrf
     public function isTokenCorrect($token_name, $token_value)
     {
         if ($token_name !== $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_NAME]) {
-            throw new NotCorrectException("Token name does not exist");
+            throw new NotCorrectException("Token name is not correct");
         }
         if ($token_value !== $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE]) {
-            throw new NotCorrectException("Token value does not exist");
+            throw new NotCorrectException("Token value is not correct");
         }
     }
     /**
