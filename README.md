@@ -36,6 +36,7 @@ try {
     $csrf->updateExpireAt(1800);
     
     // ...
+    
 } catch (NotExistException $ex) {
   
   // ...
