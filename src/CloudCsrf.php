@@ -1,106 +1,176 @@
 <?php
+/**
+ * Cloud Csrf 
+ *
+ * @author Cloud (https://github.com/mark801117)
+ */
 namespace Cloud\CloudCsrf;
 /**
- * Description of CloudCsrf
  * 
- * @author Cloud
+ * @package Cloud\CloudCsrf
  */
 class CloudCsrf 
 {
+    /** 
+     * token key of session 
+     * 
+     * @var string
+     */
+    const CSRF_TOKEN = 'csrf_token'; 
 
-    const CSRF_TOKEN='csrf_token'; 
-    const CSRF_TOKEN_NAME='_token';
-    const CSRF_TOKEN_VALUE='_token_value';
+    /**
+     * token value of session
+     * 
+     * @var string
+     */
+    const CSRF_TOKEN_VALUE = '_token_value';
     
+    /**
+     * Create new csrf
+     * 
+     * @throws CloudCsrfException if session is not active
+     */
     public function __construct()
     {
-        //1. 檢查session_status
+        //0. 初始化
         if (!isset($_SESSION[self::CSRF_TOKEN])) {
             $_SESSION[self::CSRF_TOKEN] = [];
         }
+        //1. 檢查session_status
         if (session_status() != PHP_SESSION_ACTIVE) {
             throw new CloudCsrfException('Session is not active');
         }
     }
-    /**
-     * 產生token pairs
-     * @param type $name_length token_name長度
-     * @param type $value_length token_value長度
-     * @param type $expire_secs token存活時間
-     */
-    public function generateToken($name_length = 8, $value_length = 32, $expire_secs = 1800)
-    {
-        //0. 設定token有效時間
-        if (!isset($_SESSION[self::CSRF_TOKEN]['_token_expire_at'])) {
-            $this->updateExpireAt($expire_secs);
-        }
-        $this->updateExpireAt($expire_secs);
-        //1. 產生token_name
-        //1.1 若已存在則不重複建立
-        if (!isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_NAME])) {
-            //1.2 產生
-            $name = bin2hex(openssl_random_pseudo_bytes($name_length));
-            //1.3 存放
-            $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_NAME] = $name;
-        }
 
-        //2. 產生token_value
-        //2.1 若已存在則不重複建立
-        if (!isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE])) {
-            //2.2 產生
-            $value = bin2hex(openssl_random_pseudo_bytes($value_length));
-            //2.3 存放
-            $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE] = $value;
-        }
-    }
-    public function getTokenName()
+    /**
+     * 產生token 
+     * @param int $expire_secs token存活時間, default: 30mins
+     * @param int $value_length token_value長度, default: 32
+     * 
+     * @return void
+     */
+    public function generateToken($expire_secs = 3600, $value_length = 32)
     {
-        return $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_NAME];
+        //1. 產生token_value
+        //1.1 若已存在則不重複建立
+        if (!isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE])) {
+            $this->generate($value_length);
+        } 
+        //1.2 若已過期則重新建立
+        if ($this->isExpired()) {
+            $this->generate($value_length);
+        }
+        //2. 設定token有效時間
+        $this->updateExpireAt($expire_secs);
     }
-    public function getTokenValue()
+    
+    /**
+     * 取得token value
+     * 
+     * @return string 
+     */
+    public function get()
     {
         return $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE];
     }
+
     /**
-     * 檢查是否有設定token pairs
+     * 清除token value
+     * 
+     * @return void
      */
-    public function isTokenExist()
+    public function clear()
     {
-        if (!isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_NAME])) {
-            throw new NotExistException("Token name does not exist");
-        }
-        if (!isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE])) {
-            throw new NotExistException("Token value does not exist");
-        }
+        unset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE]);
     }
+
     /**
-     * 檢查是否有token pairs是否正確
+     * 是否有設定token value
+     * 
+     * @return boolean
      */
-    public function isTokenCorrect($token_name, $token_value)
+    public function isExist()
     {
-        if ($token_name !== $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_NAME]) {
-            throw new NotCorrectException("Token name is not correct");
-        }
-        if ($token_value !== $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE]) {
-            throw new NotCorrectException("Token value is not correct");
-        }
+        return !isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE]);
     }
+
+    /**
+     * token value 是否正確
+     * 
+     * @param string $token_value
+     * @return boolean
+     */
+    public function isCorrect($token_value)
+    {
+        $curr_token_value = $this->get();
+        
+        return $token_value !== $curr_token_value;
+    }
+
     /**
      * 檢查token是否已過期
+     * 
+     * @return boolean
      */
-    public function isTokenExpired()
+    public function isExpired()
     {
         $curr_time = time();
-        if ($curr_time > $_SESSION[self::CSRF_TOKEN]['_token_expire_at']) {
-            throw new ExpiredException("Token has exipred");
+        return $curr_time > $_SESSION[self::CSRF_TOKEN]['_token_expire_at'];
+    }
+
+    /**
+     * 檢查token
+     *
+     * @param string $token_value 欲檢查之token值
+     * @throws NotExistException 當token不存在時
+     * @throws NotCorrectException 當token值不正確時
+     * @throws ExpiredException 當token過期時
+     * @return void
+     */
+    public function check($token_value)
+    {
+        //1. 檢查是否存在
+        if (!$this->isExist()) {
+            throw new NotExistException("Token is not exist");
+        }
+        //2. 檢查是否正確
+        if (!$this->isCorrect($token_value)) {
+            throw new NotCorrectException("Token is not correct");
+
+        }
+        //3. 檢查是否過期
+        if ($this->isExpired()) {
+            throw new ExpiredException("Token has expired");
         }
     }
+
     /**
      * 更新token過期時間
+     * @param int $expire_secs never been expired if set "null"
+     * 
+     * @return void
      */
     public function updateExpireAt($expire_secs)
     {
-        $expire_at = time() + $expire_secs;
-        $_SESSION[self::CSRF_TOKEN]['_token_expire_at'] = $expire_at;
+        if ($expire_secs === null) {
+            unset($_SESSION[self::CSRF_TOKEN]['_token_expire_at']);
+        } else {
+            if (is_int($expire_secs)) {
+                $expire_at = time() + $expire_secs;
+                $_SESSION[self::CSRF_TOKEN]['_token_expire_at'] = $expire_at;
+            }
+        }
+    }
+
+    /**
+     * 產生token
+     * @param int $value_length
+     * 
+     * @return void
+     */
+    private function generate($value_length)
+    {
+        $value = bin2hex(openssl_random_pseudo_bytes($value_length));
+        $_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE] = $value;
     }
 }
