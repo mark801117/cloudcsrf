@@ -25,15 +25,8 @@ $csrf->generateToken();
 
 try {
     $token_value = "test123"; //request 帶入的token_value
-    $token_name = "test321" //request 帶入的token_name
-    //1. 驗證token是否存在
-    $csrf->isTokenExist();
-    //2. 驗證token是否正確
-    $csrf->isTokenCorrect($token_name, $token_value);
-    //3. 驗證token是否過期
-    $csrf->isTokenExpired();
-    //4. 每次驗證過舊更新token過期時間
-    $csrf->updateExpireAt(1800);
+    //1. 驗證token
+    $csrf->check();
     
     // ...
     
