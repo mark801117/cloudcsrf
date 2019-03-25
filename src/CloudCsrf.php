@@ -91,7 +91,7 @@ class CloudCsrf
      */
     public function isExist()
     {
-        return !isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE]);
+        return isset($_SESSION[self::CSRF_TOKEN][self::CSRF_TOKEN_VALUE]);
     }
 
     /**
@@ -104,7 +104,7 @@ class CloudCsrf
     {
         $curr_token_value = $this->get();
         
-        return $token_value !== $curr_token_value;
+        return $token_value === $curr_token_value;
     }
 
     /**
