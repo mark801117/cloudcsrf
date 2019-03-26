@@ -35,6 +35,7 @@ class CloudCsrf
         //0. 初始化
         if (!isset($_SESSION[self::CSRF_TOKEN])) {
             $_SESSION[self::CSRF_TOKEN] = [];
+            $_SESSION[self::CSRF_TOKEN]['_token_expire_at'] = 0;
         }
         //1. 檢查session_status
         if (session_status() != PHP_SESSION_ACTIVE) {
